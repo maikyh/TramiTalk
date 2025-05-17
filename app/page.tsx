@@ -32,6 +32,8 @@ import PaymentCardPanel from "@/components/payment-card-panel"
 import TorreonLogo from "@/components/torreon-logo"
 import ListeningOverlay from "@/components/listening-overlay"
 import VoiceChatButton from "@/components/VoiceChatButton"
+import { io } from "socket.io-client";
+import { Ticket } from "lucide-react"; 
 
 export default function HomePage() {
   const { toast } = useToast()
@@ -43,7 +45,50 @@ export default function HomePage() {
   const [showListeningOverlay, setShowListeningOverlay] = useState(false)
   const micButtonRef = useRef<HTMLButtonElement>(null)
   const longPressTimeoutRef = useRef<NodeJS.Timeout | null>(null)
+  const sessionId = useRef(Date.now().toString());
+  const socketRef = useRef<any>(null);
+  const initialHistory = [
+    { id: 1, title: "Pago CFE", time: "12 min", icon: CreditCard, color: "#24B649", amount: "$782.50" },
+    { id: 2, title: "Pago de SIMAS", time: "2 días", icon: GlassWater, color: "#ADD8E6", amount: "$1,250.00" },
+    { id: 3, title: "Pago Telmex", time: "3 días", icon: Home, color: "#4885C5", amount: "$499.00" },
+  ];
+  const [historyItems, setHistoryItems] = useState(initialHistory);
+  
+  useEffect(() => {
+    const socket = io("http://localhost:8000", {
+      transports: ["websocket"],
+      cors: {
+        origin: "http://localhost:3000",
+      },
+    });
 
+    socket.on("data", (data) => {
+      console.log("llega dato:", data);
+      const newItem = {
+        id: Date.now(),                   
+        title: "Pago multa de tránsito",
+        time: "Ahora",                    
+        icon: Car,
+        color: "#E74C3C",                
+        amount: `$1500`,
+      };
+  
+      setHistoryItems((prev) => {
+        const exists = prev.some(
+          (item) => item.title === newItem.title && item.amount === newItem.amount
+        );
+        if (exists) {
+          return prev;
+        }
+        return [newItem, ...prev];
+      });
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, []);
+  
   useEffect(() => {
     // Simulate loading time for welcome animation
     const timer = setTimeout(() => {
@@ -112,12 +157,6 @@ export default function HomePage() {
     { id: 4, title: "Impuestos y SS", icon: CreditCard, color: "#CB4FCB" },
     { id: 5, title: "Citas Médicas", icon: Calendar, color: "#FF4333" },
     { id: 6, title: "Trámites Escolares", icon: FileCheck, color: "#0A3B32" },
-  ]
-
-  const historyItems = [
-    { id: 1, title: "Pago CFE", time: "12 min", icon: CreditCard, color: "#24B649", amount: "$782.50" },
-    { id: 2, title: "Pago de SIMAS", time: "2 días", icon: GlassWater, color: "#ADD8E6", amount: "$1,250.00" },
-    { id: 3, title: "Pago Telmex", time: "3 días", icon: Home, color: "#4885C5", amount: "$499.00" },
   ]
 
   // Eventos para el calendario
