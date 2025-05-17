@@ -1,5 +1,3 @@
-"use client";
-
 import { useState, useRef, useEffect } from "react";
 import { io, Socket } from "socket.io-client";
 import { motion, AnimatePresence } from "framer-motion";
@@ -7,13 +5,14 @@ import { Mic } from "lucide-react";
 import ListeningOverlay from "./listening-overlay";
 
 export default function VoiceChatButton() {
-  const [isListening, setIsListening] = useState<boolean>(false);
-  const [showListeningOverlay, setShowListeningOverlay] = useState<boolean>(false);
-  const socketRef = useRef<Socket | null>(null);
-  const recognitionRef = useRef<any>(null);
-  const sessionId = useRef<string>(Date.now().toString());
-  const audioQueueRef = useRef<string[]>([]);
-  const isPlayingRef = useRef<boolean>(false);
+  const [isListening, setIsListening] = useState(false);
+  const [showListeningOverlay, setShowListeningOverlay] = useState(false);
+  const [conversationState, setConversationState] = useState("esperando"); // "esperando", "escuchando" o "hablando"
+  const socketRef = useRef(null);
+  const recognitionRef = useRef(null);
+  const sessionId = useRef(Date.now().toString());
+  const audioQueueRef = useRef([]);
+  const isPlayingRef = useRef(false);
 
   useEffect(() => {
     if (typeof window === "undefined") return;
@@ -22,8 +21,9 @@ export default function VoiceChatButton() {
     socketRef.current = io("http://localhost:8000");
     socketRef.current.on(
       "mensaje_agente",
-      ({ session_id, texto }: { session_id: string; texto: string }) => {
+      ({ session_id, texto }) => {
         if (session_id === sessionId.current) {
+          setConversationState("hablando");
           enqueueAudio(texto);
         }
       }
@@ -31,14 +31,14 @@ export default function VoiceChatButton() {
 
     // 2. Configurar SpeechRecognition
     const SpeechRecognitionConstructor =
-      (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+      (window).SpeechRecognition || (window).webkitSpeechRecognition;
     if (SpeechRecognitionConstructor) {
       recognitionRef.current = new SpeechRecognitionConstructor();
       recognitionRef.current.lang = "es-ES";
       recognitionRef.current.continuous = false;
       recognitionRef.current.interimResults = false;
 
-      recognitionRef.current.onresult = (event: any) => {
+      recognitionRef.current.onresult = (event) => {
         const transcript = event.results[0][0].transcript.trim();
         sendMessage(transcript);
       };
@@ -61,7 +61,7 @@ export default function VoiceChatButton() {
   }, []);
 
   // Encola texto para TTS
-  const enqueueAudio = (text: string) => {
+  const enqueueAudio = (text) => {
     if (!text) return;
     audioQueueRef.current.push(text);
     if (!isPlayingRef.current) processAudioQueue();
@@ -71,10 +71,12 @@ export default function VoiceChatButton() {
   const processAudioQueue = async () => {
     if (audioQueueRef.current.length === 0) {
       isPlayingRef.current = false;
+      setConversationState("esperando");
       return;
     }
+    
     isPlayingRef.current = true;
-    const text = audioQueueRef.current.shift()!;
+    const text = audioQueueRef.current.shift();
 
     try {
       const res = await fetch("http://localhost:8000/api/text-to-speech", {
@@ -97,23 +99,32 @@ export default function VoiceChatButton() {
   };
 
   // Envía mensaje al backend
-  const sendMessage = (texto: string) => {
+  const sendMessage = (texto) => {
     if (!texto) return;
     socketRef.current?.emit("mensaje_usuario", {
       session_id: sessionId.current,
       texto,
     });
-    setShowListeningOverlay(false);
+  };
+
+  // Iniciar escucha desde el botón de esperando
+  const startListening = () => {
+    setConversationState("escuchando");
+    setIsListening(true);
+    recognitionRef.current?.start();
   };
 
   // Handlers de presión larga
   const handleMouseDown = () => {
-    setIsListening(true);
     setShowListeningOverlay(true);
-    recognitionRef.current?.start();
+    setConversationState("esperando");
   };
 
-  const handleMouseUp = () => {
+  // Cerrar overlay manualmente
+  const handleCloseOverlay = () => {
+    setShowListeningOverlay(false);
+    setIsListening(false);
+    setConversationState("esperando");
     recognitionRef.current?.stop();
   };
 
@@ -128,10 +139,7 @@ export default function VoiceChatButton() {
           }`}
           whileHover={{ scale: 1.1, boxShadow: "0 0 15px rgba(208,32,48,0.5)" }}
           whileTap={{ scale: 0.9 }}
-          onMouseDown={handleMouseDown}
-          onMouseUp={handleMouseUp}
-          onTouchStart={handleMouseDown}
-          onTouchEnd={handleMouseUp}
+          onClick={handleMouseDown}
           initial={{ opacity: 0, scale: 0 }}
           animate={{ opacity: 1, scale: 1 }}
           transition={{ delay: 0.5, type: "spring" }}
@@ -167,7 +175,11 @@ export default function VoiceChatButton() {
 
       <AnimatePresence>
         {showListeningOverlay && (
-          <ListeningOverlay onClose={() => { setShowListeningOverlay(false); setIsListening(false); }} />
+          <ListeningOverlay 
+            conversationState={conversationState}
+            onClose={handleCloseOverlay}
+            onStartListening={startListening}
+          />
         )}
       </AnimatePresence>
     </>
