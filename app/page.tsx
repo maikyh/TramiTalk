@@ -12,6 +12,7 @@ import {
   ChevronRight,
   FileCheck,
   Home,
+  GlassWater,
   ChevronLeft,
 } from "lucide-react"
 import { motion, AnimatePresence } from "framer-motion"
@@ -115,7 +116,7 @@ export default function HomePage() {
 
   const historyItems = [
     { id: 1, title: "Pago CFE", time: "12 min", icon: CreditCard, color: "#24B649", amount: "$782.50" },
-    { id: 2, title: "Trámite Licencia de conducir", time: "2 días", icon: Car, color: "#CB4FCB", amount: "$1,250.00" },
+    { id: 2, title: "Pago de SIMAS", time: "2 días", icon: GlassWater, color: "#ADD8E6", amount: "$1,250.00" },
     { id: 3, title: "Pago Telmex", time: "3 días", icon: Home, color: "#4885C5", amount: "$499.00" },
   ]
 
