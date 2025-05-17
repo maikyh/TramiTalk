@@ -30,6 +30,7 @@ import CalendarView from "@/components/calendar-view"
 import PaymentCardPanel from "@/components/payment-card-panel"
 import TorreonLogo from "@/components/torreon-logo"
 import ListeningOverlay from "@/components/listening-overlay"
+import VoiceChatButton from "@/components/VoiceChatButton"
 
 export default function HomePage() {
   const { toast } = useToast()
@@ -328,61 +329,10 @@ export default function HomePage() {
             </Tabs>
           </Card>
         </motion.div>
-
-        {/* Botón de micrófono centrado en la parte inferior con funcionalidad de presión larga */}
-        <div className="fixed bottom-6 left-0 right-0 flex justify-center z-10">
-          <motion.button
-            ref={micButtonRef}
-            className={`w-16 h-16 rounded-full flex items-center justify-center text-white shadow-lg ${
-              isListening
-                ? "bg-gradient-to-r from-[#FF4333] to-[#D02030]"
-                : "bg-gradient-to-r from-[#D02030] to-[#FF4333]"
-            }`}
-            whileHover={{ scale: 1.1, boxShadow: "0 0 15px rgba(208, 32, 48, 0.5)" }}
-            whileTap={{ scale: 0.9 }}
-            onClick={handleMicClick}
-            onMouseDown={handleMicMouseDown}
-            onMouseUp={handleMicMouseUp}
-            onTouchStart={handleMicMouseDown}
-            onTouchEnd={handleMicMouseUp}
-            initial={{ opacity: 0, scale: 0 }}
-            animate={{ opacity: 1, scale: 1 }}
-            transition={{ delay: 0.5, type: "spring" }}
-          >
-            <motion.div
-              animate={
-                isListening
-                  ? {
-                      scale: [1, 1.2, 1],
-                      boxShadow: [
-                        "0 0 0 0 rgba(255, 255, 255, 0.7)",
-                        "0 0 0 10px rgba(255, 255, 255, 0)",
-                        "0 0 0 0 rgba(255, 255, 255, 0)",
-                      ],
-                    }
-                  : {}
-              }
-              transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1.5 }}
-              className="relative"
-            >
-              <Mic size={28} />
-              {isListening && (
-                <motion.div
-                  className="absolute inset-0 rounded-full bg-white"
-                  initial={{ opacity: 0.7, scale: 1 }}
-                  animate={{ opacity: 0, scale: 2 }}
-                  transition={{ repeat: Number.POSITIVE_INFINITY, duration: 1.5 }}
-                />
-              )}
-            </motion.div>
-          </motion.button>
-        </div>
+        
+        <VoiceChatButton></VoiceChatButton>
       </div>
 
-      {/* Overlay de escucha a pantalla completa */}
-      <AnimatePresence>
-        {showListeningOverlay && <ListeningOverlay onClose={handleCloseListeningOverlay} />}
-      </AnimatePresence>
     </main>
   )
 }
